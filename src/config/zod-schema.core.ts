@@ -448,6 +448,18 @@ export const TtsConfigSchema = z
       .optional(),
     edge: TtsMicrosoftConfigSchema,
     microsoft: TtsMicrosoftConfigSchema,
+    smallestai: z
+      .object({
+        apiKey: SecretInputSchema.optional().register(sensitive),
+        baseUrl: z.string().optional(),
+        voiceId: z.string().optional(),
+        model: z.string().optional(),
+        sampleRate: z.number().int().min(8000).max(48000).optional(),
+        speed: z.number().min(0.5).max(2).optional(),
+        language: z.string().optional(),
+      })
+      .strict()
+      .optional(),
     prefsPath: z.string().optional(),
     maxTextLength: z.number().int().min(1).optional(),
     timeoutMs: z.number().int().min(1000).max(120000).optional(),

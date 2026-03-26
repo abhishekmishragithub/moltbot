@@ -1389,6 +1389,20 @@ export const FIELD_HELP: Record<string, string> = {
     "Removes the acknowledgment reaction after final reply delivery when enabled. Keep enabled for cleaner UX in channels where persistent ack reactions create clutter.",
   "messages.tts":
     "Text-to-speech policy for reading agent replies aloud on supported voice or audio surfaces. Keep disabled unless voice playback is part of your operator/user workflow.",
+  "messages.tts.smallestai":
+    "Smallest AI (Lightning) TTS provider configuration for ultra-fast voice synthesis. Requires a Smallest AI API key from waves.smallest.ai.",
+  "messages.tts.smallestai.apiKey":
+    "Smallest AI API key for authenticating TTS requests. Obtain from https://waves.smallest.ai.",
+  "messages.tts.smallestai.baseUrl":
+    "Custom base URL for Smallest AI API requests. Override only for on-premise or proxy deployments.",
+  "messages.tts.smallestai.voiceId":
+    "Voice identifier for Smallest AI TTS. Available voices include quinn, magnus, mia, olivia, daniel, and 100+ more. Full list at waves-docs.smallest.ai.",
+  "messages.tts.smallestai.model": "Smallest AI TTS model identifier. Default: lightning-v3.1.",
+  "messages.tts.smallestai.sampleRate":
+    "Audio sample rate in Hz for Smallest AI TTS output. Supported: 8000, 16000, 24000, 44100.",
+  "messages.tts.smallestai.speed": "Playback speed for Smallest AI TTS (0.5-2.0, default 1.0).",
+  "messages.tts.smallestai.language":
+    "ISO 639-1 language code for Smallest AI TTS (default: en). Supports 15 languages including English, Spanish, Hindi, Tamil, French, and more.",
   channels:
     "Channel provider configurations plus shared defaults that control access policies, heartbeat visibility, and per-surface behavior. Keep defaults centralized and override per provider only where required.",
   "channels.telegram":

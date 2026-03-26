@@ -93,6 +93,16 @@ export type TtsConfig = {
     proxy?: string;
     timeoutMs?: number;
   };
+  /** Smallest AI (Lightning) configuration. */
+  smallestai?: {
+    apiKey?: SecretInput;
+    baseUrl?: string;
+    voiceId?: string;
+    model?: string;
+    sampleRate?: number;
+    speed?: number;
+    language?: string;
+  };
   /** Optional path for local TTS user preferences JSON. */
   prefsPath?: string;
   /** Hard cap for text sent to TTS (chars). */

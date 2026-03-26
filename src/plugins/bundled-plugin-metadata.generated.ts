@@ -2794,6 +2794,28 @@ export const GENERATED_BUNDLED_PLUGIN_METADATA = [
     },
   },
   {
+    dirName: "smallestai",
+    idHint: "smallestai",
+    source: {
+      source: "./index.ts",
+      built: "index.js",
+    },
+    packageName: "@openclaw/smallestai-provider",
+    packageVersion: "2026.3.22",
+    packageDescription: "OpenClaw Smallest AI speech and audio transcription provider",
+    packageManifest: {
+      extensions: ["./index.ts"],
+    },
+    manifest: {
+      id: "smallestai",
+      configSchema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {},
+      },
+    },
+  },
+  {
     dirName: "synology-chat",
     idHint: "synology-chat",
     source: {

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildElevenLabsSpeechProvider } from "../../extensions/elevenlabs/speech-provider.ts";
 import { buildMicrosoftSpeechProvider } from "../../extensions/microsoft/speech-provider.ts";
 import { buildOpenAISpeechProvider } from "../../extensions/openai/speech-provider.ts";
+import { buildSmallestaiSpeechProvider } from "../../extensions/smallestai/speech-provider.ts";
 import type { OpenClawConfig } from "../config/config.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
@@ -134,6 +135,7 @@ describe("tts", () => {
       { pluginId: "openai", provider: buildOpenAISpeechProvider(), source: "test" },
       { pluginId: "microsoft", provider: buildMicrosoftSpeechProvider(), source: "test" },
       { pluginId: "elevenlabs", provider: buildElevenLabsSpeechProvider(), source: "test" },
+      { pluginId: "smallestai", provider: buildSmallestaiSpeechProvider(), source: "test" },
     ];
     setActivePluginRegistry(registry, "tts-test");
     vi.clearAllMocks();
@@ -600,6 +602,7 @@ describe("tts", () => {
             OPENAI_API_KEY: "test-openai-key",
             ELEVENLABS_API_KEY: undefined,
             XI_API_KEY: undefined,
+            SMALLEST_API_KEY: undefined,
           },
           prefsPath: "/tmp/tts-prefs-openai.json",
           expected: "openai",
@@ -609,6 +612,7 @@ describe("tts", () => {
             OPENAI_API_KEY: undefined,
             ELEVENLABS_API_KEY: "test-elevenlabs-key",
             XI_API_KEY: undefined,
+            SMALLEST_API_KEY: undefined,
           },
           prefsPath: "/tmp/tts-prefs-elevenlabs.json",
           expected: "elevenlabs",
@@ -618,6 +622,7 @@ describe("tts", () => {
             OPENAI_API_KEY: undefined,
             ELEVENLABS_API_KEY: undefined,
             XI_API_KEY: undefined,
+            SMALLEST_API_KEY: undefined,
           },
           prefsPath: "/tmp/tts-prefs-microsoft.json",
           expected: "microsoft",
@@ -631,6 +636,115 @@ describe("tts", () => {
           expect(provider).toBe(testCase.expected);
         });
       }
+    });
+  });
+
+  describe("resolveTtsConfig smallestai", () => {
+    it("resolves smallestai defaults when no config provided", () => {
+      const cfg: OpenClawConfig = {
+        agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+        messages: { tts: {} },
+      };
+      const config = resolveTtsConfig(cfg);
+      expect(config.smallestai.baseUrl).toBe("https://api.smallest.ai");
+      expect(config.smallestai.voiceId).toBe("quinn");
+      expect(config.smallestai.model).toBe("lightning-v3.1");
+      expect(config.smallestai.sampleRate).toBe(24000);
+      expect(config.smallestai.language).toBe("en");
+      expect(config.smallestai.speed).toBe(1.0);
+    });
+
+    it("resolves smallestai config overrides", () => {
+      const cfg: OpenClawConfig = {
+        agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+        messages: {
+          tts: {
+            smallestai: {
+              voiceId: "robert",
+              speed: 1.5,
+              language: "hi",
+              sampleRate: 16000,
+            },
+          },
+        },
+      };
+      const config = resolveTtsConfig(cfg);
+      expect(config.smallestai.voiceId).toBe("robert");
+      expect(config.smallestai.speed).toBe(1.5);
+      expect(config.smallestai.language).toBe("hi");
+      expect(config.smallestai.sampleRate).toBe(16000);
+    });
+  });
+
+  describe("resolveTtsApiKey smallestai", () => {
+    const baseCfg: OpenClawConfig = {
+      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+      messages: { tts: {} },
+    };
+
+    it("resolves from config", () => {
+      const cfg: OpenClawConfig = {
+        ...baseCfg,
+        messages: {
+          tts: { smallestai: { apiKey: "test-smallest-key" } },
+        },
+      };
+      const config = resolveTtsConfig(cfg);
+      expect(tts.resolveTtsApiKey(config, "smallestai")).toBe("test-smallest-key");
+    });
+
+    it("falls back to SMALLEST_API_KEY env var", () => {
+      withEnv({ SMALLEST_API_KEY: "env-smallest-key" }, () => {
+        const config = resolveTtsConfig(baseCfg);
+        expect(tts.resolveTtsApiKey(config, "smallestai")).toBe("env-smallest-key");
+      });
+    });
+  });
+
+  describe("getTtsProvider auto-selects smallestai", () => {
+    const baseCfg: OpenClawConfig = {
+      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+      messages: { tts: {} },
+    };
+
+    it("auto-selects smallestai when only SMALLEST_API_KEY is set", () => {
+      withEnv(
+        {
+          OPENAI_API_KEY: undefined,
+          ELEVENLABS_API_KEY: undefined,
+          XI_API_KEY: undefined,
+          SMALLEST_API_KEY: "test-smallest-key",
+        },
+        () => {
+          const config = resolveTtsConfig(baseCfg);
+          const provider = getTtsProvider(config, `/tmp/tts-prefs-smallestai-${Date.now()}.json`);
+          expect(provider).toBe("smallestai");
+        },
+      );
+    });
+  });
+
+  describe("parseTtsDirectives smallestai", () => {
+    it("accepts smallestai as provider override", () => {
+      const policy = resolveModelOverridePolicy({ enabled: true, allowProvider: true });
+      const input = "Hello [[tts:provider=smallestai]] world";
+      const result = parseTtsDirectives(input, policy);
+      expect(result.overrides.provider).toBe("smallestai");
+    });
+
+    it("accepts smallestai_voice directive", () => {
+      const policy = resolveModelOverridePolicy({ enabled: true });
+      const input = "Hello [[tts:smallestai_voice=quinn]] world";
+      const result = parseTtsDirectives(input, policy);
+      expect(result.overrides.smallestai?.voiceId).toBe("quinn");
+    });
+
+    it("rejects invalid smallestai voice", () => {
+      const policy = resolveModelOverridePolicy({ enabled: true });
+      const input = "Hello [[tts:smallestai_voice=nonexistent_voice_12345]] world";
+      const result = parseTtsDirectives(input, policy);
+      expect(result.overrides.smallestai?.voiceId).toBeUndefined();
+      expect(result.warnings).toContain('invalid Smallest AI voice "nonexistent_voice_12345"');
     });
   });
 

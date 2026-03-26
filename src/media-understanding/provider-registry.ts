@@ -2,6 +2,7 @@ import type { OpenClawConfig } from "../config/config.js";
 import {
   deepgramMediaUnderstandingProvider,
   groqMediaUnderstandingProvider,
+  smallestaiMediaUnderstandingProvider,
 } from "../plugin-sdk/media-understanding.js";
 import { loadOpenClawPlugins } from "../plugins/loader.js";
 import { getActivePluginRegistry } from "../plugins/runtime.js";
@@ -11,6 +12,7 @@ import type { MediaUnderstandingProvider } from "./types.js";
 const PROVIDERS: MediaUnderstandingProvider[] = [
   groqMediaUnderstandingProvider,
   deepgramMediaUnderstandingProvider,
+  smallestaiMediaUnderstandingProvider,
 ];
 
 function mergeProviderIntoRegistry(

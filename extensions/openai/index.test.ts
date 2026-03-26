@@ -187,6 +187,14 @@ function createLiveTtsConfig(): ResolvedTtsConfig {
       outputFormatConfigured: false,
       saveSubtitles: false,
     },
+    smallestai: {
+      baseUrl: "https://api.smallest.ai",
+      voiceId: "quinn",
+      model: "lightning-v3.1",
+      sampleRate: 24000,
+      speed: 1.0,
+      language: "en",
+    },
     maxTextLength: 4_000,
     timeoutMs: 30_000,
   };

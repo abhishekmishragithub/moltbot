@@ -62,6 +62,12 @@ const DEFAULT_EDGE_VOICE = "en-US-MichelleNeural";
 const DEFAULT_EDGE_LANG = "en-US";
 const DEFAULT_EDGE_OUTPUT_FORMAT = "audio-24khz-48kbitrate-mono-mp3";
 
+const DEFAULT_SMALLESTAI_BASE_URL = "https://api.smallest.ai";
+const DEFAULT_SMALLESTAI_VOICE_ID = "quinn";
+const DEFAULT_SMALLESTAI_MODEL = "lightning-v3.1";
+const DEFAULT_SMALLESTAI_SAMPLE_RATE = 24000;
+const DEFAULT_SMALLESTAI_LANGUAGE = "en";
+
 const DEFAULT_ELEVENLABS_VOICE_SETTINGS = {
   stability: 0.5,
   similarityBoost: 0.75,
@@ -132,6 +138,15 @@ export type ResolvedTtsConfig = {
     proxy?: string;
     timeoutMs?: number;
   };
+  smallestai: {
+    apiKey?: string;
+    baseUrl: string;
+    voiceId: string;
+    model: string;
+    sampleRate: number;
+    speed: number;
+    language: string;
+  };
   prefsPath?: string;
   maxTextLength: number;
   timeoutMs: number;
@@ -178,6 +193,12 @@ export type TtsDirectiveOverrides = {
   microsoft?: {
     voice?: string;
     outputFormat?: string;
+  };
+  smallestai?: {
+    voiceId?: string;
+    language?: string;
+    speed?: number;
+    sampleRate?: number;
   };
 };
 
@@ -339,6 +360,18 @@ export function resolveTtsConfig(cfg: OpenClawConfig): ResolvedTtsConfig {
       proxy: rawMicrosoft.proxy?.trim() || undefined,
       timeoutMs: rawMicrosoft.timeoutMs,
     },
+    smallestai: {
+      apiKey: normalizeResolvedSecretInputString({
+        value: raw.smallestai?.apiKey,
+        path: "messages.tts.smallestai.apiKey",
+      }),
+      baseUrl: raw.smallestai?.baseUrl?.trim() || DEFAULT_SMALLESTAI_BASE_URL,
+      voiceId: raw.smallestai?.voiceId?.trim() || DEFAULT_SMALLESTAI_VOICE_ID,
+      model: raw.smallestai?.model?.trim() || DEFAULT_SMALLESTAI_MODEL,
+      sampleRate: raw.smallestai?.sampleRate ?? DEFAULT_SMALLESTAI_SAMPLE_RATE,
+      speed: raw.smallestai?.speed ?? 1.0,
+      language: raw.smallestai?.language?.trim() || DEFAULT_SMALLESTAI_LANGUAGE,
+    },
     prefsPath: raw.prefsPath,
     maxTextLength: raw.maxTextLength ?? DEFAULT_MAX_TEXT_LENGTH,
     timeoutMs: raw.timeoutMs ?? DEFAULT_TIMEOUT_MS,
@@ -478,6 +511,9 @@ export function getTtsProvider(config: ResolvedTtsConfig, prefsPath: string): Tt
   if (resolveTtsApiKey(config, "elevenlabs")) {
     return "elevenlabs";
   }
+  if (resolveTtsApiKey(config, "smallestai")) {
+    return "smallestai";
+  }
   return "microsoft";
 }
 
@@ -546,10 +582,13 @@ export function resolveTtsApiKey(
   if (normalizedProvider === "openai") {
     return config.openai.apiKey || process.env.OPENAI_API_KEY;
   }
+  if (normalizedProvider === "smallestai") {
+    return config.smallestai.apiKey || process.env.SMALLEST_API_KEY;
+  }
   return undefined;
 }
 
-export const TTS_PROVIDERS = ["openai", "elevenlabs", "microsoft"] as const;
+export const TTS_PROVIDERS = ["openai", "elevenlabs", "microsoft", "smallestai"] as const;
 
 export function resolveTtsProviderOrder(primary: TtsProvider, cfg?: OpenClawConfig): TtsProvider[] {
   const normalizedPrimary = normalizeSpeechProviderId(primary) ?? primary;

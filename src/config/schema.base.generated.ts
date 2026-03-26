@@ -8474,6 +8474,100 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                 },
                 additionalProperties: false,
               },
+              smallestai: {
+                type: "object",
+                properties: {
+                  apiKey: {
+                    anyOf: [
+                      {
+                        type: "string",
+                      },
+                      {
+                        oneOf: [
+                          {
+                            type: "object",
+                            properties: {
+                              source: {
+                                type: "string",
+                                const: "env",
+                              },
+                              provider: {
+                                type: "string",
+                                pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                              },
+                              id: {
+                                type: "string",
+                                pattern: "^[A-Z][A-Z0-9_]{0,127}$",
+                              },
+                            },
+                            required: ["source", "provider", "id"],
+                            additionalProperties: false,
+                          },
+                          {
+                            type: "object",
+                            properties: {
+                              source: {
+                                type: "string",
+                                const: "file",
+                              },
+                              provider: {
+                                type: "string",
+                                pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                              },
+                              id: {
+                                type: "string",
+                              },
+                            },
+                            required: ["source", "provider", "id"],
+                            additionalProperties: false,
+                          },
+                          {
+                            type: "object",
+                            properties: {
+                              source: {
+                                type: "string",
+                                const: "exec",
+                              },
+                              provider: {
+                                type: "string",
+                                pattern: "^[a-z][a-z0-9_-]{0,63}$",
+                              },
+                              id: {
+                                type: "string",
+                              },
+                            },
+                            required: ["source", "provider", "id"],
+                            additionalProperties: false,
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  baseUrl: {
+                    type: "string",
+                  },
+                  voiceId: {
+                    type: "string",
+                  },
+                  model: {
+                    type: "string",
+                  },
+                  sampleRate: {
+                    type: "integer",
+                    minimum: 8000,
+                    maximum: 48000,
+                  },
+                  speed: {
+                    type: "number",
+                    minimum: 0.5,
+                    maximum: 2,
+                  },
+                  language: {
+                    type: "string",
+                  },
+                },
+                additionalProperties: false,
+              },
               prefsPath: {
                 type: "string",
               },
@@ -15171,6 +15265,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Text-to-speech policy for reading agent replies aloud on supported voice or audio surfaces. Keep disabled unless voice playback is part of your operator/user workflow.",
       tags: ["media"],
     },
+    "messages.tts.smallestai": {
+      label: "Smallest AI TTS",
+      help: "Smallest AI (Lightning) TTS provider configuration for ultra-fast voice synthesis. Requires a Smallest AI API key from waves.smallest.ai.",
+      tags: ["media"],
+    },
     "talk.provider": {
       label: "Talk Active Provider",
       help: 'Active Talk provider id (for example "elevenlabs").',
@@ -16117,6 +16216,35 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       help: "Plugin entry name inside the source marketplace, used for later updates.",
       tags: ["advanced"],
     },
+    "messages.tts.smallestai.apiKey": {
+      help: "Smallest AI API key for authenticating TTS requests. Obtain from https://waves.smallest.ai.",
+      tags: ["security", "auth", "media"],
+      sensitive: true,
+    },
+    "messages.tts.smallestai.baseUrl": {
+      help: "Custom base URL for Smallest AI API requests. Override only for on-premise or proxy deployments.",
+      tags: ["media"],
+    },
+    "messages.tts.smallestai.voiceId": {
+      help: "Voice identifier for Smallest AI TTS. Available voices include quinn, magnus, mia, olivia, daniel, and 100+ more. Full list at waves-docs.smallest.ai.",
+      tags: ["media"],
+    },
+    "messages.tts.smallestai.model": {
+      help: "Smallest AI TTS model identifier. Default: lightning-v3.1.",
+      tags: ["models", "media"],
+    },
+    "messages.tts.smallestai.sampleRate": {
+      help: "Audio sample rate in Hz for Smallest AI TTS output. Supported: 8000, 16000, 24000, 44100.",
+      tags: ["media"],
+    },
+    "messages.tts.smallestai.speed": {
+      help: "Playback speed for Smallest AI TTS (0.5-2.0, default 1.0).",
+      tags: ["media"],
+    },
+    "messages.tts.smallestai.language": {
+      help: "ISO 639-1 language code for Smallest AI TTS (default: en). Supports 15 languages including English, Spanish, Hindi, Tamil, French, and more.",
+      tags: ["media"],
+    },
     "models.providers.*.headers.*": {
       sensitive: true,
       tags: ["security", "models"],
@@ -16205,6 +16333,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       sensitive: true,
       tags: ["security", "auth", "network", "media", "channels"],
     },
+    "channels.discord.voice.tts.smallestai.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth", "network", "media", "channels"],
+    },
     "channels.discord.accounts.*.token": {
       sensitive: true,
       tags: ["security", "auth", "network", "channels"],
@@ -16214,6 +16346,10 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
       tags: ["security", "auth", "network", "media", "channels"],
     },
     "channels.discord.accounts.*.voice.tts.openai.apiKey": {
+      sensitive: true,
+      tags: ["security", "auth", "network", "media", "channels"],
+    },
+    "channels.discord.accounts.*.voice.tts.smallestai.apiKey": {
       sensitive: true,
       tags: ["security", "auth", "network", "media", "channels"],
     },

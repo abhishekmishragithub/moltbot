@@ -9,7 +9,7 @@ title: "Text-to-Speech (legacy path)"
 
 # Text-to-speech (TTS)
 
-OpenClaw can convert outbound replies into audio using ElevenLabs, Microsoft, or OpenAI.
+OpenClaw can convert outbound replies into audio using ElevenLabs, Microsoft, OpenAI, or Smallest AI.
 It works anywhere OpenClaw can send audio; Telegram gets a round voice-note bubble.
 
 ## Supported services
@@ -17,6 +17,7 @@ It works anywhere OpenClaw can send audio; Telegram gets a round voice-note bubb
 - **ElevenLabs** (primary or fallback provider)
 - **Microsoft** (primary or fallback provider; current bundled implementation uses `node-edge-tts`, default when no API keys)
 - **OpenAI** (primary or fallback provider; also used for summaries)
+- **Smallest AI** (primary or fallback provider; ultra-fast Lightning TTS with 100+ voices and 15 languages)
 
 ### Microsoft speech notes
 
@@ -33,10 +34,11 @@ or ElevenLabs.
 
 ## Optional keys
 
-If you want OpenAI or ElevenLabs:
+If you want OpenAI, ElevenLabs, or Smallest AI:
 
 - `ELEVENLABS_API_KEY` (or `XI_API_KEY`)
 - `OPENAI_API_KEY`
+- `SMALLEST_API_KEY`
 
 Microsoft speech does **not** require an API key. If no API keys are found,
 OpenClaw defaults to Microsoft (unless disabled via
@@ -54,6 +56,8 @@ so that provider must also be authenticated if you enable summaries.
 - [ElevenLabs Authentication](https://elevenlabs.io/docs/api-reference/authentication)
 - [node-edge-tts](https://github.com/SchneeHertz/node-edge-tts)
 - [Microsoft Speech output formats](https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech#audio-outputs)
+- [Smallest AI Waves TTS](https://waves-docs.smallest.ai)
+- [Smallest AI Lightning v3.1 model card](https://waves-docs.smallest.ai/v4.0.0/content/text-to-speech/model-cards/lightning-v3-1)
 
 ## Is it enabled by default?
 
@@ -141,6 +145,27 @@ Full schema is in [Gateway configuration](/gateway/configuration).
 }
 ```
 
+### Smallest AI primary
+
+```json5
+{
+  messages: {
+    tts: {
+      auto: "always",
+      provider: "smallestai",
+      smallestai: {
+        voiceId: "quinn",
+        sampleRate: 24000,
+        language: "en",
+      },
+    },
+  },
+}
+```
+
+Set `SMALLEST_API_KEY` in your environment or use `smallestai.apiKey` in config.
+Smallest AI supports 100+ voices and 15 languages. Top voices include quinn (female, American, conversational), magnus (male, American), mia (female), and olivia (female). Use custom cloned voice IDs (e.g. `voice_HKZXlHGz96`) from the Smallest AI console.
+
 ### Disable Microsoft speech
 
 ```json5
@@ -207,9 +232,9 @@ Then run:
   - `tagged` only sends audio when the reply includes `[[tts]]` tags.
 - `enabled`: legacy toggle (doctor migrates this to `auto`).
 - `mode`: `"final"` (default) or `"all"` (includes tool/block replies).
-- `provider`: speech provider id such as `"elevenlabs"`, `"microsoft"`, or `"openai"` (fallback is automatic).
+- `provider`: speech provider id such as `"elevenlabs"`, `"microsoft"`, `"openai"`, or `"smallestai"` (fallback is automatic).
 - If `provider` is **unset**, OpenClaw prefers `openai` (if key), then `elevenlabs` (if key),
-  otherwise `microsoft`.
+  then `smallestai` (if key), otherwise `microsoft`.
 - Legacy `provider: "edge"` still works and is normalized to `microsoft`.
 - `summaryModel`: optional cheap model for auto-summary; defaults to `agents.defaults.model.primary`.
   - Accepts `provider/model` or a configured model alias.
@@ -218,7 +243,7 @@ Then run:
 - `maxTextLength`: hard cap for TTS input (chars). `/tts audio` fails if exceeded.
 - `timeoutMs`: request timeout (ms).
 - `prefsPath`: override the local prefs JSON path (provider/limit/summary).
-- `apiKey` values fall back to env vars (`ELEVENLABS_API_KEY`/`XI_API_KEY`, `OPENAI_API_KEY`).
+- `apiKey` values fall back to env vars (`ELEVENLABS_API_KEY`/`XI_API_KEY`, `OPENAI_API_KEY`, `SMALLEST_API_KEY`).
 - `elevenlabs.baseUrl`: override ElevenLabs API base URL.
 - `openai.baseUrl`: override the OpenAI TTS endpoint.
   - Resolution order: `messages.tts.openai.baseUrl` -> `OPENAI_TTS_BASE_URL` -> `https://api.openai.com/v1`
@@ -240,6 +265,13 @@ Then run:
 - `microsoft.proxy`: proxy URL for Microsoft speech requests.
 - `microsoft.timeoutMs`: request timeout override (ms).
 - `edge.*`: legacy alias for the same Microsoft settings.
+- `smallestai.apiKey`: Smallest AI API key (falls back to `SMALLEST_API_KEY` env var).
+- `smallestai.baseUrl`: override Smallest AI API base URL (default `https://api.smallest.ai`).
+- `smallestai.voiceId`: voice identifier (default `quinn`). Supports 100+ built-in voices and custom cloned voices.
+- `smallestai.model`: TTS model (default `lightning-v3.1`).
+- `smallestai.sampleRate`: audio sample rate in Hz (8000, 16000, 24000, 44100; default 24000).
+- `smallestai.speed`: playback speed (0.5-2.0; default 1.0).
+- `smallestai.language`: ISO 639-1 language code (default `en`). Supports 15 languages including English, Spanish, Hindi, Tamil, French, and more.
 
 ## Model-driven overrides (default on)
 
@@ -264,13 +296,14 @@ Here you go.
 
 Available directive keys (when enabled):
 
-- `provider` (registered speech provider id, for example `openai`, `elevenlabs`, or `microsoft`; requires `allowProvider: true`)
+- `provider` (registered speech provider id, for example `openai`, `elevenlabs`, `microsoft`, or `smallestai`; requires `allowProvider: true`)
 - `voice` (OpenAI voice) or `voiceId` (ElevenLabs)
 - `model` (OpenAI TTS model or ElevenLabs model id)
 - `stability`, `similarityBoost`, `style`, `speed`, `useSpeakerBoost`
 - `applyTextNormalization` (`auto|on|off`)
 - `languageCode` (ISO 639-1)
 - `seed`
+- `smallestai_voice` (Smallest AI voice id)
 
 Disable all model overrides:
 
@@ -330,6 +363,8 @@ These override `messages.tts.*` for that host.
     guaranteed Opus voice notes. citeturn1search1
   - If the configured Microsoft output format fails, OpenClaw retries with MP3.
 
+- **Smallest AI**: MP3 output. Compatible with all messaging channels as a file attachment.
+
 OpenAI/ElevenLabs formats are fixed; Telegram expects Opus for voice-note UX.
 
 ## Auto-TTS behavior
@@ -374,7 +409,7 @@ Discord note: `/tts` is a built-in Discord command, so OpenClaw registers
 /tts inbound
 /tts tagged
 /tts status
-/tts provider openai
+/tts provider smallestai
 /tts limit 2000
 /tts summary off
 /tts audio Hello from OpenClaw

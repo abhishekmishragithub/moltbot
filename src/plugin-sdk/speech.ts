@@ -3,7 +3,14 @@
 export { buildElevenLabsSpeechProvider } from "../../extensions/elevenlabs/speech-provider.js";
 export { buildMicrosoftSpeechProvider } from "../../extensions/microsoft/speech-provider.js";
 export { buildOpenAISpeechProvider } from "../../extensions/openai/speech-provider.js";
-export { edgeTTS, elevenLabsTTS, inferEdgeExtension, openaiTTS } from "../tts/tts-core.js";
-export { OPENAI_TTS_MODELS, OPENAI_TTS_VOICES } from "../tts/tts-core.js";
+export { buildSmallestaiSpeechProvider } from "../../extensions/smallestai/speech-provider.js";
+export {
+  edgeTTS,
+  elevenLabsTTS,
+  inferEdgeExtension,
+  openaiTTS,
+  smallestaiTTS,
+} from "../tts/tts-core.js";
+export { OPENAI_TTS_MODELS, OPENAI_TTS_VOICES, SMALLESTAI_VOICES } from "../tts/tts-core.js";
 export { parseTtsDirectives } from "../tts/tts-core.js";
 export type { SpeechVoiceOption } from "../tts/provider-types.js";
