@@ -13,6 +13,8 @@ import {
   OPENAI_TTS_VOICES,
   resolveOpenAITtsInstructions,
 } from "../../extensions/openai/tts.ts";
+import { buildSmallestaiSpeechProvider } from "../../extensions/smallestai/speech-provider.ts";
+import { isValidSmallestaiVoice, SMALLESTAI_VOICES } from "../../extensions/smallestai/tts.ts";
 import type { OpenClawConfig } from "../config/config.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
@@ -137,6 +139,7 @@ describe("tts", () => {
       { pluginId: "openai", provider: buildOpenAISpeechProvider(), source: "test" },
       { pluginId: "microsoft", provider: buildMicrosoftSpeechProvider(), source: "test" },
       { pluginId: "elevenlabs", provider: buildElevenLabsSpeechProvider(), source: "test" },
+      { pluginId: "smallestai", provider: buildSmallestaiSpeechProvider(), source: "test" },
     ];
     setActivePluginRegistry(registry, "tts-test");
     vi.clearAllMocks();
@@ -837,6 +840,178 @@ describe("tts", () => {
           }
         });
       }
+    });
+  });
+
+  describe("isValidSmallestaiVoice", () => {
+    it("validates Smallest AI voice names case-insensitively", () => {
+      const cases = [
+        { value: "quinn", expected: true },
+        { value: "Quinn", expected: true },
+        { value: "QUINN", expected: true },
+        { value: "magnus", expected: true },
+        { value: "mia", expected: true },
+        { value: "olivia", expected: true },
+        { value: "daniel", expected: true },
+        { value: "rachel", expected: true },
+        { value: "advika", expected: true },
+        { value: "vivaan", expected: true },
+        { value: "robert", expected: true },
+        { value: "camilla", expected: true },
+        { value: "invalid", expected: false },
+        { value: "", expected: false },
+        { value: "alloy", expected: false },
+      ] as const;
+      for (const testCase of cases) {
+        expect(isValidSmallestaiVoice(testCase.value), testCase.value).toBe(testCase.expected);
+      }
+    });
+
+    it("includes all expected voices", () => {
+      expect(SMALLESTAI_VOICES).toContain("quinn");
+      expect(SMALLESTAI_VOICES).toContain("magnus");
+      expect(SMALLESTAI_VOICES).toHaveLength(10);
+    });
+  });
+
+  describe("resolveTtsConfig – smallestai provider", () => {
+    it("resolves smallestai config with defaults", () => {
+      const config = resolveTtsConfig({
+        messages: {
+          tts: {
+            provider: "smallestai",
+          },
+        },
+      });
+      const providerConfig = getResolvedSpeechProviderConfig(config, "smallestai") as {
+        voiceId?: string;
+        model?: string;
+        sampleRate?: number;
+        speed?: number;
+        language?: string;
+      };
+
+      expect(config.provider).toBe("smallestai");
+      expect(providerConfig.voiceId).toBe("quinn");
+      expect(providerConfig.model).toBe("lightning-v3.1");
+      expect(providerConfig.sampleRate).toBe(24_000);
+      expect(providerConfig.speed).toBe(1.0);
+      expect(providerConfig.language).toBe("en");
+    });
+
+    it("resolves smallestai config with custom values", () => {
+      const config = resolveTtsConfig({
+        messages: {
+          tts: {
+            provider: "smallestai",
+            providers: {
+              smallestai: {
+                voiceId: "magnus",
+                model: "lightning-v3.1",
+                sampleRate: 16000,
+                speed: 1.5,
+                language: "de",
+              },
+            },
+          },
+        },
+      });
+      const providerConfig = getResolvedSpeechProviderConfig(config, "smallestai") as {
+        voiceId?: string;
+        model?: string;
+        sampleRate?: number;
+        speed?: number;
+        language?: string;
+      };
+
+      expect(providerConfig.voiceId).toBe("magnus");
+      expect(providerConfig.sampleRate).toBe(16000);
+      expect(providerConfig.speed).toBe(1.5);
+      expect(providerConfig.language).toBe("de");
+    });
+  });
+
+  describe("getTtsProvider – smallestai", () => {
+    it("reports smallestai as configured when SMALLEST_API_KEY is set", () => {
+      withEnv(
+        {
+          SMALLEST_API_KEY: "test-smallest-key",
+        },
+        () => {
+          const provider = buildSmallestaiSpeechProvider();
+          expect(
+            provider.isConfigured({
+              providerConfig: {},
+              timeoutMs: 30_000,
+            }),
+          ).toBe(true);
+        },
+      );
+    });
+
+    it("reports smallestai as not configured without API key", () => {
+      withEnv(
+        {
+          SMALLEST_API_KEY: undefined,
+        },
+        () => {
+          const provider = buildSmallestaiSpeechProvider();
+          expect(
+            provider.isConfigured({
+              providerConfig: {},
+              timeoutMs: 30_000,
+            }),
+          ).toBe(false);
+        },
+      );
+    });
+
+    it("selects smallestai when explicitly configured as provider", () => {
+      withEnv(
+        {
+          SMALLEST_API_KEY: "test-smallest-key",
+        },
+        () => {
+          const config = resolveTtsConfig({
+            messages: { tts: { provider: "smallestai" } },
+          });
+          const provider = getTtsProvider(config, `/tmp/tts-prefs-smallestai-${Date.now()}.json`);
+          expect(provider).toBe("smallestai");
+        },
+      );
+    });
+  });
+
+  describe("parseTtsDirectives – smallestai_voice", () => {
+    it("accepts smallestai_voice directive", () => {
+      const policy = resolveModelOverridePolicy({ enabled: true, allowProvider: true });
+      const input = "Hello [[tts:provider=smallestai smallestai_voice=magnus]] world";
+      const result = parseTtsDirectives(input, policy);
+      const smallestaiOverrides = result.overrides.providerOverrides?.smallestai as
+        | { voiceId?: string }
+        | undefined;
+
+      expect(result.overrides.provider).toBe("smallestai");
+      expect(smallestaiOverrides?.voiceId).toBe("magnus");
+    });
+
+    it("rejects invalid smallestai voice", () => {
+      const policy = resolveModelOverridePolicy({ enabled: true, allowProvider: true });
+      const input = "Hello [[tts:provider=smallestai smallestai_voice=invalid]] world";
+      const result = parseTtsDirectives(input, policy);
+
+      expect(result.warnings).toContain('invalid Smallest AI voice "invalid"');
+    });
+
+    it("accepts smallestaivoice alias", () => {
+      const policy = resolveModelOverridePolicy({ enabled: true, allowProvider: true });
+      const input = "Hello [[tts:provider=smallestai smallestaivoice=mia]] world";
+      const result = parseTtsDirectives(input, policy);
+      const smallestaiOverrides = result.overrides.providerOverrides?.smallestai as
+        | { voiceId?: string }
+        | undefined;
+
+      expect(smallestaiOverrides?.voiceId).toBe("mia");
     });
   });
 });

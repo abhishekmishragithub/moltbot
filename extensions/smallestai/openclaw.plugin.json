@@ -1,0 +1,11 @@
+{
+  "id": "smallestai",
+  "enabledByDefault": true,
+  "speechProviders": ["smallestai"],
+  "mediaUnderstandingProviders": ["smallestai"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

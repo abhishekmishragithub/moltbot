@@ -9,7 +9,7 @@ title: "Text-to-Speech (legacy path)"
 
 # Text-to-speech (TTS)
 
-OpenClaw can convert outbound replies into audio using ElevenLabs, Microsoft, or OpenAI.
+OpenClaw can convert outbound replies into audio using ElevenLabs, Microsoft, OpenAI, or Smallest AI.
 It works anywhere OpenClaw can send audio.
 
 ## Supported services
@@ -17,6 +17,7 @@ It works anywhere OpenClaw can send audio.
 - **ElevenLabs** (primary or fallback provider)
 - **Microsoft** (primary or fallback provider; current bundled implementation uses `node-edge-tts`)
 - **OpenAI** (primary or fallback provider; also used for summaries)
+- **Smallest AI** (primary or fallback provider)
 
 ### Microsoft speech notes
 
@@ -33,10 +34,11 @@ or ElevenLabs.
 
 ## Optional keys
 
-If you want OpenAI or ElevenLabs:
+If you want OpenAI, ElevenLabs, or Smallest AI:
 
 - `ELEVENLABS_API_KEY` (or `XI_API_KEY`)
 - `OPENAI_API_KEY`
+- `SMALLEST_API_KEY`
 
 Microsoft speech does **not** require an API key.
 
@@ -52,6 +54,7 @@ so that provider must also be authenticated if you enable summaries.
 - [ElevenLabs Authentication](https://elevenlabs.io/docs/api-reference/authentication)
 - [node-edge-tts](https://github.com/SchneeHertz/node-edge-tts)
 - [Microsoft Speech output formats](https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech#audio-outputs)
+- [Smallest AI Waves API](https://docs.smallest.ai)
 
 ## Is it enabled by default?
 
@@ -143,6 +146,30 @@ Full schema is in [Gateway configuration](/gateway/configuration).
 }
 ```
 
+### Smallest AI primary
+
+```json5
+{
+  messages: {
+    tts: {
+      auto: "always",
+      provider: "smallestai",
+      providers: {
+        smallestai: {
+          apiKey: "smallest_api_key",
+          baseUrl: "https://api.smallest.ai",
+          voiceId: "quinn",
+          model: "lightning-v3.1",
+          sampleRate: 24000,
+          speed: 1.0,
+          language: "en",
+        },
+      },
+    },
+  },
+}
+```
+
 ### Disable Microsoft speech
 
 ```json5
@@ -211,7 +238,7 @@ Then run:
   - `tagged` only sends audio when the reply includes `[[tts]]` tags.
 - `enabled`: legacy toggle (doctor migrates this to `auto`).
 - `mode`: `"final"` (default) or `"all"` (includes tool/block replies).
-- `provider`: speech provider id such as `"elevenlabs"`, `"microsoft"`, or `"openai"` (fallback is automatic).
+- `provider`: speech provider id such as `"elevenlabs"`, `"microsoft"`, `"openai"`, or `"smallestai"` (fallback is automatic).
 - If `provider` is **unset**, OpenClaw uses the first configured speech provider in registry auto-select order.
 - Legacy `provider: "edge"` still works and is normalized to `microsoft`.
 - `summaryModel`: optional cheap model for auto-summary; defaults to `agents.defaults.model.primary`.
@@ -222,7 +249,7 @@ Then run:
 - `maxTextLength`: hard cap for TTS input (chars). `/tts audio` fails if exceeded.
 - `timeoutMs`: request timeout (ms).
 - `prefsPath`: override the local prefs JSON path (provider/limit/summary).
-- `apiKey` values fall back to env vars (`ELEVENLABS_API_KEY`/`XI_API_KEY`, `OPENAI_API_KEY`).
+- `apiKey` values fall back to env vars (`ELEVENLABS_API_KEY`/`XI_API_KEY`, `OPENAI_API_KEY`, `SMALLEST_API_KEY`).
 - `providers.elevenlabs.baseUrl`: override ElevenLabs API base URL.
 - `providers.openai.baseUrl`: override the OpenAI TTS endpoint.
   - Resolution order: `messages.tts.providers.openai.baseUrl` -> `OPENAI_TTS_BASE_URL` -> `https://api.openai.com/v1`
@@ -244,6 +271,13 @@ Then run:
 - `providers.microsoft.proxy`: proxy URL for Microsoft speech requests.
 - `providers.microsoft.timeoutMs`: request timeout override (ms).
 - `edge.*`: legacy alias for the same Microsoft settings.
+- `providers.smallestai.apiKey`: Smallest AI API key (falls back to `SMALLEST_API_KEY`).
+- `providers.smallestai.baseUrl`: override Smallest AI API base URL (default `https://api.smallest.ai`).
+- `providers.smallestai.voiceId`: voice name (e.g. `quinn`, `magnus`, `mia`). Default: `quinn`.
+- `providers.smallestai.model`: TTS model id. Default: `lightning-v3.1`.
+- `providers.smallestai.sampleRate`: audio sample rate in Hz. Default: `24000`.
+- `providers.smallestai.speed`: speech speed multiplier. Default: `1.0`.
+- `providers.smallestai.language`: ISO 639-1 language code. Default: `en`.
 
 ## Model-driven overrides (default on)
 
@@ -268,8 +302,8 @@ Here you go.
 
 Available directive keys (when enabled):
 
-- `provider` (registered speech provider id, for example `openai`, `elevenlabs`, or `microsoft`; requires `allowProvider: true`)
-- `voice` (OpenAI voice) or `voiceId` (ElevenLabs)
+- `provider` (registered speech provider id, for example `openai`, `elevenlabs`, `microsoft`, or `smallestai`; requires `allowProvider: true`)
+- `voice` (OpenAI voice) or `voiceId` (ElevenLabs) or `smallestai_voice` (Smallest AI)
 - `model` (OpenAI TTS model or ElevenLabs model id)
 - `stability`, `similarityBoost`, `style`, `speed`, `useSpeakerBoost`
 - `applyTextNormalization` (`auto|on|off`)
@@ -325,7 +359,7 @@ These override `messages.tts.*` for that host.
 
 - **Feishu / Matrix / Telegram / WhatsApp**: Opus voice message (`opus_48000_64` from ElevenLabs, `opus` from OpenAI).
   - 48kHz / 64kbps is a good voice message tradeoff.
-- **Other channels**: MP3 (`mp3_44100_128` from ElevenLabs, `mp3` from OpenAI).
+- **Other channels**: MP3 (`mp3_44100_128` from ElevenLabs, `mp3` from OpenAI, `mp3` from Smallest AI).
   - 44.1kHz / 128kbps is the default balance for speech clarity.
 - **Microsoft**: uses `microsoft.outputFormat` (default `audio-24khz-48kbitrate-mono-mp3`).
   - The bundled transport accepts an `outputFormat`, but not all formats are available from the service.
@@ -379,6 +413,7 @@ Discord note: `/tts` is a built-in Discord command, so OpenClaw registers
 /tts tagged
 /tts status
 /tts provider openai
+/tts provider smallestai
 /tts limit 2000
 /tts summary off
 /tts audio Hello from OpenClaw

@@ -18,3 +18,5 @@ export {
   describeImagesWithModel,
 } from "../media-understanding/image-runtime.js";
 export { transcribeOpenAiCompatibleAudio } from "../media-understanding/openai-compatible-audio.js";
+
+export { smallestaiMediaUnderstandingProvider } from "../../extensions/smallestai/media-understanding-provider.js";
