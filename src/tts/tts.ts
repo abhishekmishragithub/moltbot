@@ -53,7 +53,7 @@ const DEFAULT_EDGE_LANG = "en-US";
 const DEFAULT_EDGE_OUTPUT_FORMAT = "audio-24khz-48kbitrate-mono-mp3";
 
 // Smallest AI defaults (Lightning v3.1)
-// See: https://waves-docs.smallest.ai/
+// See: https://docs.smallest.ai/waves
 const DEFAULT_SMALLESTAI_BASE_URL = "https://waves-api.smallest.ai/api/v1";
 const DEFAULT_SMALLESTAI_VOICE_ID = "lauren";
 const DEFAULT_SMALLESTAI_MODEL = "lightning-v3.1" as const;
@@ -1092,7 +1092,7 @@ async function openaiTTS(params: {
  * Uses the Lightning model for fast speech synthesis or Waves for highest quality.
  * Supports native mulaw@8kHz output for telephony.
  *
- * @see https://waves-docs.smallest.ai/
+ * @see https://docs.smallest.ai/waves
  */
 async function smallestAiTTS(params: {
   text: string;

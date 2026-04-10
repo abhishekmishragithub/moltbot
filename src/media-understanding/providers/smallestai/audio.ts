@@ -20,7 +20,7 @@ type SmallestTranscriptResponse = {
  *
  * Endpoint: POST /api/v1/pulse/get_text
  * Uses raw audio bytes with Content-Type header (application/octet-stream method).
- * @see https://waves-docs.smallest.ai/v4.0.0/content/api-references/pulse-stt
+ * @see https://docs.smallest.ai/waves/api-reference/api-reference/speech-to-text/pulse
  */
 export async function transcribeSmallestAiAudio(
   params: AudioTranscriptionRequest,

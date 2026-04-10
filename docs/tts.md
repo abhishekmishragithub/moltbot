@@ -50,7 +50,7 @@ so that provider must also be authenticated if you enable summaries.
 - [OpenAI Audio API reference](https://platform.openai.com/docs/api-reference/audio)
 - [ElevenLabs Text to Speech](https://elevenlabs.io/docs/api-reference/text-to-speech)
 - [ElevenLabs Authentication](https://elevenlabs.io/docs/api-reference/authentication)
-- [Smallest AI Waves TTS](https://waves-docs.smallest.ai/)
+- [Smallest AI Waves TTS](https://docs.smallest.ai/waves)
 - [node-edge-tts](https://github.com/SchneeHertz/node-edge-tts)
 - [Microsoft Speech output formats](https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech#audio-outputs)
 
